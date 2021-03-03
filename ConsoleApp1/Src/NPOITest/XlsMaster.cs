@@ -1,5 +1,6 @@
 ﻿using NPOI.HSSF.UserModel;
 using NPOI.SS.UserModel;
+using NPOI.SS.Util;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,8 +14,10 @@ namespace ConsoleApp1
     {        
         public void StartWork()
         {
-            string path = @"E:\code\vs\ConsoleApp1\Temp\CaliReport.xls";
-            string outPath = @"E:\code\vs\ConsoleApp1\Temp\TestOut.xls";
+
+            //E:\code\vs\Console\ConsoleApp1\bin\Debug
+            string path = @"..\..\Temp\CaliReport.xls";
+            string outPath = @"..\..\Temp\TestOut.xls";            
 
             //创建Excel文件的对象             
             FileStream fs = new FileStream(path, FileMode.Open);
@@ -30,6 +33,11 @@ namespace ConsoleApp1
                 "3,4",
                 "5,6"
             };
+
+            List<string> exAdd = new List<string>()
+            {
+                "4","6","7"
+            };
            
             if(toAdd.Count == 1)
             {
@@ -40,6 +48,7 @@ namespace ConsoleApp1
             }
             else
             {
+                //行移动
                 sheet.ShiftRows(startRow + 1, sheet.LastRowNum, toAdd.Count - 1, true, false);
                 var rowSource = sheet.GetRow(startRow);
                 var rowStyle = rowSource.RowStyle;
@@ -50,19 +59,41 @@ namespace ConsoleApp1
                     if(i == 0)
                     {
                         sheet.GetRow(startRow + i).GetCell(1).SetCellValue(values[0]);
-                        sheet.GetRow(startRow + i).GetCell(2).SetCellValue(values[2]);
+                        sheet.GetRow(startRow + i).GetCell(2).SetCellValue(values[1]);
                     }
                     else
                     {
                         var row = sheet.CreateRow(startRow + i);
-                        row.RowStyle = rowStyle;
-                        row.CreateCell(1).SetCellValue(values[0]);
-                        row.CreateCell(2).SetCellValue(values[1]);
+                        //行的格式，一般为null
+                        if (rowStyle != null)
+                            row.RowStyle = rowStyle;
+                        row.Height = rowSource.Height;
+                        
+                        //对于本行的每个单元格，赋予和源行同样的格式
+                        for (int col = 0; col < rowSource.LastCellNum; col++)
+                        {
+                            var cellsource = rowSource.GetCell(col);
+                            var cellInsert = row.CreateCell(col);
+                            var cellStyle = cellsource.CellStyle;
+                            //设置单元格样式　　　　
+                            if (cellStyle != null)
+                                cellInsert.CellStyle = cellsource.CellStyle;
+                        }
+                        row.Cells[1].SetCellValue(values[0]);
+                        row.Cells[2].SetCellValue(values[1]);
                     }
-                    
+                }
+                if(exAdd.Count > 0)
+                {
+
                 }
 
-            }           
+                //合并单元格
+                CellRangeAddress region = new CellRangeAddress(startRow, toAdd.Count + startRow - 1, 3, 4);
+                sheet.AddMergedRegion(region);
+                sheet.GetRow(startRow).GetCell(3).SetCellValue("误差");
+
+            }
 
             //绑定数据
             //for (int j = 0; j < toAdd.Count; j++)
